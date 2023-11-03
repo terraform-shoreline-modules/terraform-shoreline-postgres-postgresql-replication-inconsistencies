@@ -1,0 +1,154 @@
+{
+  "name": "postgresql_replication_inconsistencies",
+  "description": "PostgreSQL Replication Inconsistencies refer to a situation where the replicas of the primary database are not properly synchronized, leading to discrepancies in the data that they contain. This can cause data consistency issues and make it difficult to troubleshoot and resolve the underlying problem. Identifying the root cause of replication inconsistencies is essential to ensure that the data across all databases is consistent and accurate.",
+  "params": [
+    {
+      "name": "PRIMARY_DB_ADDRESS",
+      "value": ""
+    },
+    {
+      "name": "PRIMARY_DB_HOST",
+      "value": ""
+    },
+    {
+      "name": "POSTGRES_DATA_DIRECTORY",
+      "value": ""
+    },
+    {
+      "name": "REPLICATION_USER",
+      "value": ""
+    },
+    {
+      "name": "REPLICA_DB_HOST",
+      "value": ""
+    },
+    {
+      "name": "PG_REWIND_PATH",
+      "value": ""
+    },
+    {
+      "name": "VERSION",
+      "value": ""
+    },
+    {
+      "name": "REPLICA_DB_ADDRESS",
+      "value": ""
+    },
+    {
+      "name": "HOST_NAME",
+      "value": ""
+    },
+    {
+      "name": "K8S_CLUSTER_NAME",
+      "value": ""
+    },
+    {
+      "name": "NAMESPACE",
+      "value": ""
+    }
+  ],
+  "cells": [
+    {
+      "name": "cell_1",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## PostgreSQL Replication Inconsistencies\nPostgreSQL Replication Inconsistencies refer to a situation where the replicas of the primary database are not properly synchronized, leading to discrepancies in the data that they contain. This can cause data consistency issues and make it difficult to troubleshoot and resolve the underlying problem. Identifying the root cause of replication inconsistencies is essential to ensure that the data across all databases is consistent and accurate."
+    },
+    {
+      "name": "cell_2",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## 1. Check the status of the PostgreSQL service"
+    },
+    {
+      "name": "cell_3",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `systemctl status postgresql`"
+    },
+    {
+      "name": "cell_4",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## 2. Verify that replication is set up correctly"
+    },
+    {
+      "name": "cell_5",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `sudo -u postgres psql -c \"select * from pg_stat_replication;\"`"
+    },
+    {
+      "name": "cell_6",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## 3. Check the replication lag between the primary and replica databases"
+    },
+    {
+      "name": "cell_7",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `sudo -u postgres psql -c \"select pg_last_xact_replay_timestamp() - pg_last_xact_commit_timestamp() AS replication_lag_bytes;\"`"
+    },
+    {
+      "name": "cell_8",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## 4. Verify that the replica is receiving updates from the primary"
+    },
+    {
+      "name": "cell_9",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `sudo -u postgres psql -c \"select pg_last_xlog_receive_location() AS receive, pg_last_xlog_replay_location() AS replay;\"`"
+    },
+    {
+      "name": "cell_10",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## 5. Check the replication status of the replica"
+    },
+    {
+      "name": "cell_11",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `sudo -u postgres psql -c \"select * from pg_stat_wal_receiver;\"`"
+    },
+    {
+      "name": "cell_12",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## 6. Check the logs for any errors or warnings related to replication"
+    },
+    {
+      "name": "cell_13",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `tail -f /var/log/postgresql/postgresql-${VERSION}-main.log`"
+    },
+    {
+      "name": "cell_14",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Network latency or connectivity issues between the primary database and its replicas can cause replication delays, leading to inconsistencies in the data."
+    },
+    {
+      "name": "cell_15",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "host | host_name=$HOST_NAME | invoke_db_connectivity_check($PRIMARY_DB_ADDRESS, $REPLICA_DB_ADDRESS)"
+    },
+    {
+      "name": "cell_16",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## If replication inconsistencies persist, consider using a tool like pg_rewind to reset the replicas to match the primary database. This can be a more efficient way to reset the replicas than rebuilding them from scratch."
+    },
+    {
+      "name": "cell_17",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "host | host_name=$HOST_NAME | invoke_replication_reset($PRIMARY_DB_HOST, $POSTGRES_DATA_DIRECTORY, $REPLICATION_USER, $REPLICA_DB_HOST, $PG_REWIND_PATH)"
+    }
+  ]
+}
